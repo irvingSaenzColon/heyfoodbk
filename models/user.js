@@ -1,14 +1,14 @@
-import mysql from 'mysql2/promise';
+import { firebaseConfig } from '../config/firebase.config.js'
+import { initializeApp } from 'firebase/app';
+import { getStorage, uploadBytesResumable, ref, getDownloadURL } from 'firebase/storage';
+import { PrismaClient } from '@prisma/client';
 
-const config = {
-    host: 'localhost',
-    user: 'root',
-    port: '3306',
-    password: '1234',
-    database: 'heyfooddb'
-};
 
-const connection = await mysql.createConnection(config);
+const prisma = new PrismaClient();
+
+const app = initializeApp(firebaseConfig);
+const storage = getStorage(app);
+
 
 export class UserModel{
     static async getAll (){
@@ -36,43 +36,62 @@ export class UserModel{
             image, 
             option
         } = input;
+        let imageUrl = '';
 
-        let result = {
-            body:{},
-            error:0,
-            status:0
-        };
+        const userNick = await prisma.user.findUnique({
+            where: {
+                nickname : nickname
+            }
+        });
 
-        const isNicknameAviable = await this.findByNickname({input: {nickname, option: 'fn'}});
-        
-        const isEmailAviable = await this.findByEmail({input: {email, option:'fe'}});
+        const userEmail = await prisma.user.findUnique({
+            where : {
+                email: email
+            }
+        });
 
-        if(Object.keys(isEmailAviable).length >= 1){
-            result.body.email = 'Ya existe una cuenta con ese corre electrónico';
-            result.error = 3;
+        return {body: userNick, error: 0, status: 200};
+
+        // Verificar si el nickname existe
+        // Verificar si el email existe
+        if(image !== null){
+            const salt = new Date().getTime();
+            const storageRef = ref(storage, `User/${image.name}-${salt}`);
+            const metadata = {
+                contentType : image.mimetype
+            };
+            const snapshot = await uploadBytesResumable( storageRef, image.data, metadata );
+
+            imageUrl = await getDownloadURL( snapshot.ref );
         }
-
-        if(Object.keys(isNicknameAviable).length >= 1){
-            result.body.nickname = 'Ya existe una cuenta con ese nombre de usuario';
-            result.error = result.error !== 0 ? result.error : 2;
+        else{
+            imageUrl = '';
         }
+        // Formatting date so it does not cause a conflict with birthdate field of the table
+        let isoDate = (new Date(birthdate)).toISOString();
+        // Creating a record
+        try{
+            const userRecord = await prisma.user.create({
+                data: {
+                    name: name,
+                    nickname: nickname,
+                    email: email,
+                    telephone: telephone,
+                    bio: bio,
+                    password: password,
+                    gender: gender,
+                    height: height,
+                    weight: weight,
+                    birthdate: isoDate,
+                    image: imageUrl
+                }
+            });
 
-        if(result.error)
-            return result;
-
-        const [newkey] = await connection.query('select f_generate_key() as newkey');
-        const generatedKey = newkey[0]['newkey'];
-
-        const format = image !== null ? image.mimetype.split('/')[1] : '';
-        const imageContent = image !== null ? image.data : null;
-
-        await connection.execute('CALL sp_user_actions(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);', 
-        [generatedKey, name, nickname, email, telephone, bio, password, gender, height, weight, birthdate, imageContent, format, option]);
-
-        const [results] = await connection.execute('CALL sp_user_actions(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-        [generatedKey, null, null, null, null, null, null, null, null, null, null, null, null, 'r']);
-
-        return {body: results[0][0], error: 0, status: 200}
+            return {body: userRecord, error: 0, status: 200}
+        } catch(error){
+            console.error(error)
+            return {body: error, error: 1, status: 500}
+        }
     }
 
     static async findByNickname({input}){
@@ -81,10 +100,9 @@ export class UserModel{
             option
         } = input;
 
-        const [user] = await connection.execute('CALL sp_user_actions(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);', 
-        [null, null, nickname, null, null, null, null, null, null, null, null, null, null, option]);
+        // 
 
-        return {...user[0]};
+        return {};
     }
 
     static async findByEmail({input}){

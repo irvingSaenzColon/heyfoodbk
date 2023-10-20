@@ -1,0 +1,224 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User{
+  id Int @id @default(autoincrement())
+  name String
+  birthdate DateTime @db.Date
+  nickname String @unique
+  email String @unique
+  bio String @db.VarChar(255)
+  password String @db.VarChar(255)
+  height String @db.VarChar(6) @default("")
+  weight String @db.VarChar(6) @default("")
+  telephone String @db.VarChar(50) @default("")
+  gender String @db.VarChar(10)
+  image String @db.VarChar(255) @default("")
+  cover String @db.VarChar(255) @default("")
+  createdAt DateTime @default(now())
+  weightHeader WeightHeader?
+  recipes Recipe[]
+  posts Post[]
+  comments Comment[]
+  DailyMeals DailyMeal[]
+
+  @@map("User")
+}
+
+model Nutriments{
+  id Int @id @default(autoincrement())
+  energy Decimal @db.Decimal(6,2)
+  calories Decimal @db.Decimal(6,2)
+  carbohydrates Decimal @db.Decimal(6,2)
+  proteins Decimal @db.Decimal(6,2)
+  fiber Decimal @db.Decimal(6,2)
+  potassium Decimal @db.Decimal(6,2)
+  sugar Decimal @db.Decimal(6,2)
+  fat Decimal @db.Decimal(6,2)
+  saturatedFats Decimal @db.Decimal(6,2)
+  polyunsaturatedFat Decimal @db.Decimal(6,2)
+  cholesterol Decimal @db.Decimal(6,2)
+  sodium Decimal @db.Decimal(6,2)
+  food Food?
+
+  
+  @@map("Nutriments")
+}
+
+model Category{
+  id Int @id @default(autoincrement())
+  name String @db.VarChar(100)
+  description String @db.VarChar(255)
+  food Food[]
+
+  @@map("Category")
+}
+
+model Food{
+  id Int @id @default(autoincrement())
+  name String @db.VarChar(75)
+  nutriment Nutriments @relation(fields: [nutrimentId], references: [id])
+  nutrimentId Int @unique
+  foodCategory Category @relation(fields: [categoryId], references: [id])
+  categoryId Int
+  ingredient RecipeIngredient[]
+  images FoodMedia[]
+  dailyMealDetails DailyMealDetail[]
+
+  @@map("Food")
+}
+
+model FoodMedia{
+  id Int @id @default(autoincrement())
+  image String @db.VarChar(255)
+  foodMediaFood Food @relation(fields: [fooId], references: [id])
+  fooId Int
+
+  @@map("FoodMedia")
+}
+
+model Recipe{
+  id Int @id @default(autoincrement())
+  title String @db.VarChar(100)
+  description String @db.VarChar(255)
+  preparationTime String @db.VarChar(6)
+  cookingTime String @db.VarChar(6)
+  recipeUser User @relation(fields: [userId], references: [id])
+  userId Int
+  images RecipeMedia[]
+  steps RecipeStep[]
+  ingredients RecipeIngredient[]
+
+  @@map("Recipe")
+}
+
+model RecipeMedia{
+  id Int @id @default(autoincrement())
+  image String @db.VarChar(255)
+  recipeMediaRecipe Recipe @relation(fields: [recipeId], references: [id])
+  recipeId Int
+
+  @@map("RecipeMedia")
+}
+
+model RecipeStep{
+  id Int @id @default(autoincrement())
+  description String @db.VarChar(255)
+  recipeStepRecipe Recipe @relation(fields: [recipeId], references: [id])
+  recipeId Int
+
+  @@map("RecipeStep")
+}
+
+model RecipeIngredient{
+  id Int @id @default(autoincrement())
+  portion Decimal @db.Decimal(6, 2)
+  recipeIngredientRecipe Recipe @relation(fields: [recipeId], references: [id])
+  recipeId Int
+  recipeIngredientfood Food @relation(fields: [foodId], references: [id])
+  foodId Int
+
+  @@map("RecipeIngredient")
+}
+
+model DailyMeal{
+  id Int @id @default( autoincrement() )
+  type String
+  createdAt DateTime @default(now())
+  daylyMealUser User @relation(fields: [userId], references: [id])
+  userId Int
+  dailyMealDetails DailyMealDetail[]
+}
+
+model DailyMealDetail{
+  id Int @id @default( autoincrement() )
+  portion Decimal @db.Decimal(6,2)
+  dailyMealDailyMealDetail DailyMeal @relation(fields: [dailyMealId], references: [id])
+  dailyMealId Int
+  dailyMealDetailFood Food @relation(fields: [foodId], references: [id])
+  foodId Int
+
+}
+
+model Post{
+  id Int @id @default(autoincrement())
+  description String @db.VarChar(255) @default("")
+  createdAt DateTime @default(now())
+  postUser User @relation(fields: [userId], references: [id])
+  images PostMedia[]
+  comments Comment[]
+
+  userId Int
+
+  @@map("Post")
+}
+
+model PostMedia{
+  id Int @id @default(autoincrement())
+  image String @db.VarChar(255)
+  postMediapost Post @relation(fields: [postId], references: [id])
+  postId Int
+
+  @@map("PostMedia")
+}
+
+model Comment{
+  id Int @id @default(autoincrement())
+  description String @db.VarChar(255) @default("")
+  createdAt DateTime @default(now())
+  commentPost Post @relation(fields: [postId], references: [id])
+  postId Int
+  commentUser User @relation(fields: [userId], references: [id])
+  userId Int
+  images CommentMedia[]
+
+  @@map("Comment")
+}
+
+model CommentMedia{
+  id Int @id @default( autoincrement() )
+  image String @db.VarChar(255)
+  commentMediComment Comment @relation(fields: [commentId], references: [id])
+  commentId Int
+
+  @@map("CommentMedia")
+}
+
+model WeightHeader{
+  id Int @id @default( autoincrement() )
+  weightHeaderUser User @relation(fields: [userId], references: [id])
+  userId Int @unique
+  weightItem WeightItem[]
+
+  @@map("WeightHeader")
+}
+
+model WeightItem{
+  id Int @id @default( autoincrement() )
+  value Decimal @db.Decimal(6,2)
+  createAt DateTime @default(now())
+  weightItemWeightHeader WeightHeader @relation(fields: [weightHeaderId], references: [id])
+  weightHeaderId Int
+  weightMedia WeightMedia[]
+
+  @@map("WeightItem")
+}
+
+model WeightMedia{
+  id Int @id @default( autoincrement() )
+  image String @db.VarChar(255)
+  weigtMediaWeightItem WeightItem @relation(fields: [weightItemId], references: [id])
+  weightItemId Int
+
+  @@map("WeightMedia")
+}
+
