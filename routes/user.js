@@ -7,6 +7,7 @@ const userRouter = Router();
 const userController = new UserController( {userModel :UserModel} );
 
 userRouter.get('/', userController.getAll);
+userRouter.get('/:id', userController.get);
 userRouter.post('/', userController.create);
 userRouter.post('/authenticate', userController.authenticate);
 

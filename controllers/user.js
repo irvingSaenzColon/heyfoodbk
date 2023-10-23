@@ -3,6 +3,13 @@ export class UserController{
         this.userModel = userModel;
     }
 
+    get = async (request, response) => {
+        const id = request.params.id;
+        const user = await this.userModel.get( parseInt( id ) );
+        
+        response.json(user);
+    }
+
      getAll = async (request, response) => {
         const users = await this.userModel.getAll();
         response.json(users);

@@ -17,8 +17,9 @@ export class UserModel{
         return user;
     }
 
-    static async get({ id }){
-        return 'Irving';
+    static async get( id ){
+        const user = await prisma.user.findUnique({where:{id : id}});
+        return {body: user, error: 0, status: 200};
     }
 
     static async create({input}){
@@ -33,24 +34,27 @@ export class UserModel{
             height,
             weight, 
             birthdate,
-            image, 
-            option
+            image,
         } = input;
         let imageUrl = '';
+        let errorResult ={body:{}, error: 0, status:  200};
 
-        const userNick = await prisma.user.findUnique({
-            where: {
-                nickname : nickname
-            }
-        });
+        const userNick = await prisma.user.findUnique({ where: {nickname : nickname } });
 
-        const userEmail = await prisma.user.findUnique({
-            where : {
-                email: email
-            }
-        });
+        if(userNick !== null){
+            errorResult.body = {...errorResult.body, "nickname": "Ya existe una cuenta con ese nickname"};
+            errorResult.error++;
+        }
 
-        return {body: userNick, error: 0, status: 200};
+        const userEmail = await prisma.user.findUnique({ where : { email: email } });
+
+        if(userEmail !== null){
+            errorResult.body = {...errorResult.body, "email": "Ya existe una cuenta con ese email"};
+            errorResult.error++;
+        }
+
+
+        if( errorResult.error ) return errorResult
 
         // Verificar si el nickname existe
         // Verificar si el email existe
@@ -140,13 +144,13 @@ export class UserModel{
         let userResult = {};
         
         if(type === 'n'){
-            userResult = await this.findByNickname({input: {nickname: credential, option: 'fn'}});
+            userResult = await prisma.user.findUnique({ where: {nickname : credential } });
         }
         else if ( type === 'e'){
-            userResult = await this.findByEmail({input: {email: credential, option: 'fe'}});
+            userResult = await prisma.user.findUnique({ where : { email: credential } });
         }
         else if( type === 't'){
-            userResult = await this.findByTelephone({input: {telephone: credential, option: 'ft'}});
+            // userResult = await this.findByTelephone({input: {telephone: credential, option: 'ft'}});
         }
 
         const size = Object.entries(userResult).length;
@@ -154,12 +158,14 @@ export class UserModel{
         if(!size){
             return {body: 'Usuario no encontrado', error:1003, status: 404};
         }
-        const userData = userResult[0];
+        
+        
 
-        console.log(userData);
-        if(userData.password === password)
+        if(userResult.password !== password)
             return {body: 'Usuario y/o contraseña incorrectos', error:1004, status: 404};
 
-        return {body: 'Se puede inicar sesión', error:0, status: 202};
+        console.log( userResult );
+
+        return {body: userResult, error:0, status: 202};
     }
 }
