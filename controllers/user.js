@@ -16,7 +16,7 @@ export class UserController{
     }
 
     create = async (request, response) => {
-        const image = request.files !== null ? request.files.image : null;
+        const image = (request?.files !== null && request?.files !== undefined) ? request.files.image : null;
         const data = request.body;
 
         const result =  await this.userModel.create({input: {...data, image}});
@@ -24,12 +24,23 @@ export class UserController{
         response.json(result);
     }
 
+    update = async (request, response, next) => {
+        const cover = (request?.files !== null && request?.files !== undefined) ? request.files.cover : null;
+        const data = request.body;
+        const {userId} = request;
+
+        console.log( cover );
+        const result = await this.userModel.update({input: {id: userId, ...data, cover} });
+        
+        return response.status(202).json(result);
+    }
+
     authenticate = async (request, response) => {
         const input = request.body;
         
         const result = await this.userModel.authenticate( {input: input} );
         
-        response.json(result);
+        response.status(result.status).json(result);
     }
 
 }

@@ -1,4 +1,9 @@
 ✔ -Re-hacer el login
 ✔ -Re hacer el registro
- -Obtener el perfil
--editar perfil.
+✔ -Obtener el perfil
+✔ -editar perfil.
+✔ -Crear categorias
+✔ -Obtener categorias
+✔ -Crear comidas
+✔ -Mostrar comidas
+  -Agregar comidas a dailyfood

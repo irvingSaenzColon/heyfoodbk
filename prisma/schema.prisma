@@ -36,6 +36,7 @@ model User{
 
 model Nutriments{
   id Int @id @default(autoincrement())
+  portion Decimal @db.Decimal(6,2) @default(100)
   energy Decimal @db.Decimal(6,2)
   calories Decimal @db.Decimal(6,2)
   carbohydrates Decimal @db.Decimal(6,2)
@@ -66,7 +67,7 @@ model Category{
 model Food{
   id Int @id @default(autoincrement())
   name String @db.VarChar(75)
-  nutriment Nutriments @relation(fields: [nutrimentId], references: [id])
+  nutriment Nutriments @relation(fields: [nutrimentId], references: [id], onDelete: Cascade)
   nutrimentId Int @unique
   foodCategory Category @relation(fields: [categoryId], references: [id])
   categoryId Int
@@ -133,7 +134,8 @@ model RecipeIngredient{
 model DailyMeal{
   id Int @id @default( autoincrement() )
   type String
-  createdAt DateTime @default(now())
+  totalCalories Decimal @db.Decimal(6,2)
+  createdAt DateTime @db.Date
   daylyMealUser User @relation(fields: [userId], references: [id])
   userId Int
   dailyMealDetails DailyMealDetail[]

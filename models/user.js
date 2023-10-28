@@ -2,17 +2,20 @@ import { firebaseConfig } from '../config/firebase.config.js'
 import { initializeApp } from 'firebase/app';
 import { getStorage, uploadBytesResumable, ref, getDownloadURL } from 'firebase/storage';
 import { PrismaClient } from '@prisma/client';
+import jwt from 'jsonwebtoken';
+import { deleteFromStorage, storageImage } from '../util/index.js';
 
+const {sign} = jwt;
 
 const prisma = new PrismaClient();
 
-const app = initializeApp(firebaseConfig);
-const storage = getStorage(app);
+const appFirebase = initializeApp(firebaseConfig);
+const storage = getStorage(appFirebase);
 
 
 export class UserModel{
     static async getAll (){
-        const [user] = await connection.query('SELECT * FROM user;');
+        
 
         return user;
     }
@@ -53,24 +56,11 @@ export class UserModel{
             errorResult.error++;
         }
 
-
+        // Errors count, if it is greater than zero, it means that an email or nickname already exists on db
         if( errorResult.error ) return errorResult
 
-        // Verificar si el nickname existe
-        // Verificar si el email existe
-        if(image !== null){
-            const salt = new Date().getTime();
-            const storageRef = ref(storage, `User/${image.name}-${salt}`);
-            const metadata = {
-                contentType : image.mimetype
-            };
-            const snapshot = await uploadBytesResumable( storageRef, image.data, metadata );
-
-            imageUrl = await getDownloadURL( snapshot.ref );
-        }
-        else{
-            imageUrl = '';
-        }
+        imageUrl = image !== null ? await storageImage(storage, 'User', image) : '';
+        
         // Formatting date so it does not cause a conflict with birthdate field of the table
         let isoDate = (new Date(birthdate)).toISOString();
         // Creating a record
@@ -98,43 +88,61 @@ export class UserModel{
         }
     }
 
-    static async findByNickname({input}){
+    static async update({input}){
         const {
-            nickname, 
-            option
+            id,
+            name, 
+            nickname,
+            bio,
+            cover
         } = input;
 
-        // 
+        let result = {};
 
-        return {};
-    }
+        const userNickname = await prisma.user.findUnique({where: {nickname : nickname}});
 
-    static async findByEmail({input}){
-        const {
-            email, 
-            option
-        } = input;
+        if(userNickname !== null && userNickname?.id !== id){
+            return {body: {"nickname": "Ya existe una cuenta con ese nickname", status: 409, error: 1}};
+        }
 
-        const [user] = await connection.execute('CALL sp_user_actions(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);', 
-        [null, null, null, email, null, null, null, null, null, null, null, null, null, option]);
+        const userCurrentData = await prisma.user.findUnique( {where: {id: id}} );
 
-        return {...user[0]};
-    }
+        if(cover === typeof String || cover === null){
+            console.log('La imagen es un string, por lo que no es necesario subir nada');
+            result = await prisma.user.update({
+                where: { id: id },
+                data: {
+                    name: name,
+                    nickname: nickname,
+                    bio: bio
+                }
+            });
 
-    static async findByTelephone({input}){
-        const {
-            telephone, 
-            option
-        } = input;
+            return {body: result, error: 0, status: 201}
+        }
+        
+        
+        if(userCurrentData.cover !== ''){
+            // Getting storage ref from previous
+            // await deleteFromStorage(storage, userCurrentData.cover);
+        }
 
-        const [user] = await connection.execute('CALL sp_user_actions(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);', 
-        [null, null, null, null, telephone, null, null, null, null, null, null, null, null, option]);
+        const newImageURL = await storageImage(storage,'User' ,cover);
 
-        return {...user[0]};
+            result = await prisma.user.update({
+                where: { id: id },
+                data: {
+                    name: name,
+                    nickname: nickname,
+                    bio: bio,
+                    cover: newImageURL
+                }
+            });
+
+        return {body: result, error: 0, status: 201}
     }
 
     static async authenticate({input}){
-        console.log(input);
         const {
             credential,
             password,
@@ -155,17 +163,14 @@ export class UserModel{
 
         const size = Object.entries(userResult).length;
 
-        if(!size){
-            return {body: 'Usuario no encontrado', error:1003, status: 404};
-        }
-        
-        
+        if(userResult.password !== password || !size) return {body: 'Usuario y/o contraseña incorrectos', error:1004, status: 401};
 
-        if(userResult.password !== password)
-            return {body: 'Usuario y/o contraseña incorrectos', error:1004, status: 404};
+        const payload = {id : userResult.id, nickname: userResult.nickname };
 
-        console.log( userResult );
+        const token = sign(payload, process.env.SECRET, {
+            expiresIn: '7d'
+        });
 
-        return {body: userResult, error:0, status: 202};
+        return {body: {id : userResult.id, token}, error:0, status: 202};
     }
 }
