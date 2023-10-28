@@ -133,7 +133,6 @@ model RecipeIngredient{
 
 model DailyMeal{
   id Int @id @default( autoincrement() )
-  type String
   totalCalories Decimal @db.Decimal(6,2)
   createdAt DateTime @db.Date
   daylyMealUser User @relation(fields: [userId], references: [id])
@@ -144,6 +143,7 @@ model DailyMeal{
 model DailyMealDetail{
   id Int @id @default( autoincrement() )
   portion Decimal @db.Decimal(6,2)
+  type String
   dailyMealDailyMealDetail DailyMeal @relation(fields: [dailyMealId], references: [id])
   dailyMealId Int
   dailyMealDetailFood Food @relation(fields: [foodId], references: [id])

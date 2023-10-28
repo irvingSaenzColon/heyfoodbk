@@ -13,7 +13,7 @@ export class DailyFoodModel{
 
         const dateIso = new Date(date).toISOString();
 
-        const dailyFood = await prisma.dailyMeal.findMany({ 
+        const dailyFood = await prisma.dailyMeal.findFirst({ 
             where: { createdAt:  dateIso, userId: userId},
             include : {
                 dailyMealDetails: {
@@ -45,12 +45,13 @@ export class DailyFoodModel{
 
         if( !foods ) return null;
 
+        let totalCalories = 0;
         const isoDate = new Date(date).toISOString();
         let dailyMealHeader = null;
 
-        dailyMealHeader = await prisma.dailyMeal.findFirst( {where : {createdAt: isoDate, type: type}} );
+        dailyMealHeader = await prisma.dailyMeal.findFirst( {where : {createdAt: isoDate}} );
 
-        console.log(dailyMealHeader);
+        
 
         // Create the header of daily meal only if it does not exists
         if(!dailyMealHeader){
@@ -58,7 +59,7 @@ export class DailyFoodModel{
             dailyMealHeader = await prisma.dailyMeal.create({ 
                 data: {
                     userId: userId,
-                    type: type,
+                    totalCalories: 0,
                     createdAt: isoDate
                 } 
             });
@@ -69,12 +70,38 @@ export class DailyFoodModel{
             const dailyMealDetail = await prisma.dailyMealDetail.create({
                 data: {
                     portion: food.portion,
+                    type: type,
                     foodId: food.id,
                     dailyMealId: dailyMealHeader.id
                 }
             });
-            console.log( dailyMealDetail );
         }
+
+        const foodsMeals = await prisma.dailyMealDetail.findMany({
+            where: { dailyMealId: dailyMealHeader.id },
+            select: {
+                portion: true,
+                dailyMealDetailFood: {
+                    select: {
+                        nutriment:{
+                            select: {
+                                calories: true
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        for (const f of foodsMeals) totalCalories +=((f.dailyMealDetailFood.nutriment.calories * f.portion) / 100);
+
+        await prisma.dailyMeal.update( {
+             where: { id: dailyMealHeader.id } ,
+             data: {
+                totalCalories: totalCalories
+             }
+            } );
+
 
         const result = await prisma.dailyMeal.findUnique( {
             where: {id: dailyMealHeader.id},
