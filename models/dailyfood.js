@@ -122,4 +122,24 @@ export class DailyFoodModel{
 
         return result;
     }
+
+    static async resume ( { input } ){
+        const {
+            userId,
+            beginDate,
+            endDate
+        } = input;
+
+        const result = await prisma.dailyMeal.findMany({
+            where: {
+                userId: userId,
+                createdAt: {
+                    gte: new Date(beginDate).toISOString(),
+                    lte: new Date(endDate).toISOString()
+                }
+            }
+        })
+
+        return result;
+    }
 }

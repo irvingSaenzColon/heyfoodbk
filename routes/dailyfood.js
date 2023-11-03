@@ -9,5 +9,6 @@ const dailyFoodController = new DailyFoodController( {dailyFoodModel : DailyFood
 
 dailyFoodRouter.post('/', userExtractor, dailyFoodController.getAll);
 dailyFoodRouter.post('/create', userExtractor, dailyFoodController.create);
+dailyFoodRouter.post('/resume', userExtractor, dailyFoodController.resume)
 
 export default dailyFoodRouter;

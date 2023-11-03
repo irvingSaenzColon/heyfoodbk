@@ -4,6 +4,9 @@
 ✔ -editar perfil.
 ✔ -Crear categorias
 ✔ -Obtener categorias
-✔ -Crear comidas
-✔ -Mostrar comidas
-  -Agregar comidas a dailyfood
+
+-----
+✔  -Crear comidas
+✔  -Mostrar comidas
+✔  -Agregar comidas a dailyfood
+-Mostrar el resumen entre fechas

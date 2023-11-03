@@ -29,4 +29,15 @@ export class DailyFoodController{
         return response.status(201).json( {body: result, message: 'meal created'} );
 
     }
+
+    resume = async (request, response, next) => {
+        const input = request.body;
+        const userId = request.userId;
+
+        if(!input.beginDate || !input.endDate || !userId) return response.status(422).json({body: null, message: "Falta enviar parametros"});
+
+        const result = await this.dailyFoodModel.resume( { input: {...input, userId} } );
+
+        return response.status(201).json( {body: result, message: ''} );
+    }
 }
