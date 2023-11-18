@@ -207,6 +207,7 @@ model WeightHeader{
 model WeightItem{
   id Int @id @default( autoincrement() )
   value Decimal @db.Decimal(6,2)
+  description String @db.VarChar(255) @default("")
   createAt DateTime @default(now())
   weightItemWeightHeader WeightHeader @relation(fields: [weightHeaderId], references: [id])
   weightHeaderId Int

@@ -10,6 +10,7 @@ export class DailyFoodModel{
         } = input;
 
         if(!date) return null;
+        
 
         const dateIso = new Date(date).toISOString();
 
@@ -50,8 +51,6 @@ export class DailyFoodModel{
         let dailyMealHeader = null;
 
         dailyMealHeader = await prisma.dailyMeal.findFirst( {where : {createdAt: isoDate}} );
-
-        
 
         // Create the header of daily meal only if it does not exists
         if(!dailyMealHeader){
@@ -117,8 +116,6 @@ export class DailyFoodModel{
                 }
             }
         } );
-
-        console.log( result );
 
         return result;
     }

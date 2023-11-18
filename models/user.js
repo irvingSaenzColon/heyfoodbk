@@ -1,9 +1,9 @@
 import { firebaseConfig } from '../config/firebase.config.js'
 import { initializeApp } from 'firebase/app';
-import { getStorage, uploadBytesResumable, ref, getDownloadURL } from 'firebase/storage';
+import { getStorage } from 'firebase/storage';
 import { PrismaClient } from '@prisma/client';
 import jwt from 'jsonwebtoken';
-import { deleteFromStorage, storageImage } from '../util/index.js';
+import { storageImage } from '../util/index.js';
 
 const {sign} = jwt;
 
@@ -81,7 +81,13 @@ export class UserModel{
                 }
             });
 
-            return {body: userRecord, error: 0, status: 200}
+            const payload = {id : userRecord.id, nickname: userRecord.nickname };
+
+            const token = sign(payload, process.env.SECRET, {
+                expiresIn: '7d'
+            });
+
+            return {body: {id: userRecord.id, token: token}, error: 0, status: 200}
         } catch(error){
             console.error(error)
             return {body: error, error: 1, status: 500}
@@ -171,6 +177,6 @@ export class UserModel{
             expiresIn: '7d'
         });
 
-        return {body: {id : userResult.id, token}, error:0, status: 202};
+        return {body: {id : userResult.id, token: token}, error:0, status: 202};
     }
 }

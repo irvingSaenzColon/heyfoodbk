@@ -35,7 +35,7 @@ export class UserController{
         return response.status(202).json(result);
     }
 
-    authenticate = async (request, response) => {
+    authenticate = async (request, response, next) => {
         const input = request.body;
         
         const result = await this.userModel.authenticate( {input: input} );

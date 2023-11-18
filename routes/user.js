@@ -10,7 +10,7 @@ const userController = new UserController( {userModel :UserModel} );
 userRouter.get('/', userController.getAll);
 userRouter.get('/:id', userController.get);
 userRouter.post('/', userController.create);
-userRouter.post('/update', userExtractor ,userController.update);
 userRouter.post('/authenticate', userController.authenticate);
+userRouter.post('/update', userExtractor ,userController.update);
 
 export default userRouter;
