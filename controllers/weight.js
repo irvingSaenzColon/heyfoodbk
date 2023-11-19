@@ -12,14 +12,28 @@ export class WeightController{
      getAll = async (request, response, next) => {
         // const users = await this.userModel.getAll();
         //TODO: retreive all weights from user
-        response.status(200).json([]);
+        const {userId} = request;
+
+        if(!userId){
+            return response.status(422).json({body: {}, message: 'acceso denegado'});
+        }
+
+        const result = await this.weightModel.getAll( userId );
+
+        response.status(200).json( result );
     }
 
     create = async (request, response, next) => {
-        const images = (request?.files !== null && request?.files !== undefined) ? request.files.images : null;
+        let images = (request?.files !== null && request?.files !== undefined) ? request.files.images : [];
         const data = request.body;
         const {userId} = request;
+        if( !Array.isArray(images) ){
+            images = [ images ];
+        }
 
+        if(!userId){
+            return response.status(422).json({body: {}, message: 'acceso denegado'});
+        }
 
         try{
             const result =  await this.weightModel.create({input: {...data, userId, images}});
@@ -30,20 +44,37 @@ export class WeightController{
     }
 
     update = async (request, response, next) => {
-        const cover = (request?.files !== null && request?.files !== undefined) ? request.files.cover : null;
+        let images = (request?.files !== null && request?.files !== undefined) ? request.files.images : [];
         const data = request.body;
+        let deleted =   data.deleted !== null & data.deleted !== undefined ?  JSON.parse( data.deleted ) : [];
         const {userId} = request;
 
-        console.log( cover );
-        const result = await this.weightModel.update({input: {id: userId, ...data, cover} });
+        if( !Array.isArray(images) ){
+            images = [ images ];
+        }
+
+        console.log(Array.isArray( deleted ))
+        if(!Array.isArray( deleted )){
+            console.log( Array.from( [deleted] ) );
+            data.deleted = Array.from( [deleted] );
+        } else{
+            data.deleted = deleted;
+        }
+        
+        console.log('Esto es el arreglo de nuevos elementos');
+        console.log( images );
+
+        
+        const result = await this.weightModel.update({input: {id: userId, ...data, images} });
         
         return response.status(202).json(result);
     }
 
     delete = async (request, response, next) => {
+        const id = parseInt( request.params.id ) ;
 
-        this.weightModel.delete( id );
+        await this.weightModel.delete( id );
         
-        response.status(result.status).json(result);
+        response.status(204);
     }
 }

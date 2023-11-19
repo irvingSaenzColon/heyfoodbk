@@ -218,7 +218,7 @@ model WeightItem{
 
 model WeightMedia{
   id Int @id @default( autoincrement() )
-  image String @db.VarChar(255)
+  url String @db.VarChar(255)
   weigtMediaWeightItem WeightItem @relation(fields: [weightItemId], references: [id])
   weightItemId Int
 
