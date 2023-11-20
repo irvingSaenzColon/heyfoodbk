@@ -133,4 +133,29 @@ export class FoodModel{
 
         return deleted;
     }
+
+    static async search( { input } ){
+        const {
+            category,
+            name
+        } = input;
+        
+        const foods = await prisma.food.findMany( {
+            where: {
+                name: { 
+                    contains: name
+                },
+                foodCategory:{
+                    name: { contains: category }
+                }
+            },
+            include: {
+                foodCategory: true,
+                images: true,
+                nutriment : true
+            }
+        } )
+
+        return foods;
+    }
 }

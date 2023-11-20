@@ -47,4 +47,14 @@ export class FoodController{
 
         return response.status(204);
     }
+
+    search = async (request, response, next) => {
+        const input = request.body;
+        console.log( input );
+        if( input.category === undefined || input.name === undefined) return response.status(422).json({body: {}, message: 'Falta enviar parametros para poder realizar la acción'});
+
+        const result = await this.foodModel.search( { input: input } );
+
+        return response.status(200).json( result );
+    }
 }

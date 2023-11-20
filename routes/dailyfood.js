@@ -9,6 +9,8 @@ const dailyFoodController = new DailyFoodController( {dailyFoodModel : DailyFood
 
 dailyFoodRouter.post('/', userExtractor, dailyFoodController.getAll);
 dailyFoodRouter.post('/create', userExtractor, dailyFoodController.create);
-dailyFoodRouter.post('/resume', userExtractor, dailyFoodController.resume)
+dailyFoodRouter.put('/update', userExtractor, dailyFoodController.update);
+dailyFoodRouter.post('/resume', userExtractor, dailyFoodController.resume);
+dailyFoodRouter.delete('/delete/:id', userExtractor, dailyFoodController.delete);
 
 export default dailyFoodRouter;

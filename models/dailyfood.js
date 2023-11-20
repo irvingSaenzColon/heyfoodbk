@@ -46,7 +46,6 @@ export class DailyFoodModel{
 
         if( !foods ) return null;
 
-        let totalCalories = 0;
         const isoDate = new Date(date).toISOString();
         let dailyMealHeader = null;
 
@@ -66,7 +65,7 @@ export class DailyFoodModel{
 
         // Create detail of daily meal for each food
         for await (const food of foods) {
-            const dailyMealDetail = await prisma.dailyMealDetail.create({
+            await prisma.dailyMealDetail.create({
                 data: {
                     portion: food.portion,
                     type: type,
@@ -75,6 +74,91 @@ export class DailyFoodModel{
                 }
             });
         }
+
+        const result = await prisma.dailyMeal.findUnique( {
+            where: {id: dailyMealHeader.id},
+            include: { 
+                dailyMealDetails:{
+                    include: {
+                        dailyMealDetailFood: {
+                            include: {
+                                nutriment : true
+                            }
+                        }
+                    }
+                }
+            }
+        } );
+
+        await this.updateTotalCalories( userId );
+
+        return result;
+    }
+
+    static async update({input}){
+        const {
+            id,
+            portion,
+            type,
+            userId
+        } = input;
+      
+    
+        const dailyMeal = await prisma.dailyMealDetail.update( {
+            data: {
+                portion: portion,
+                type: type
+            },
+            where: { id : id }
+        } );
+
+        await this.updateTotalCalories( userId );
+
+        return dailyMeal;
+    }
+
+    static async resume ( { input } ){
+        const {
+            userId,
+            beginDate,
+            endDate
+        } = input;
+
+        const result = await prisma.dailyMeal.findMany({
+            where: {
+                userId: userId,
+                createdAt: {
+                    gte: new Date(beginDate).toISOString(),
+                    lte: new Date(endDate).toISOString()
+                }
+            }
+        })
+
+        return result;
+    }
+
+    static async delete( { input } ){
+        const {
+            id,
+            userId
+        } = input;
+        console.log( id, userId );
+        const dailyMealDetail = await prisma.dailyMealDetail.findUnique( { where: {id: id} } );
+        
+        if(dailyMealDetail !== null){
+            await prisma.dailyMealDetail.delete( { where: { id: id} } );
+        } else{
+            console.log( 'No se encontró el registro' );
+        }
+
+        await this.updateTotalCalories( userId );
+
+        return;
+    }
+
+    static async updateTotalCalories( userId ){
+        let totalCalories = 0;
+        const dailyMealHeader = await prisma.dailyMeal.findFirst( { where: {userId: userId} } );
 
         const foodsMeals = await prisma.dailyMealDetail.findMany({
             where: { dailyMealId: dailyMealHeader.id },
@@ -99,44 +183,8 @@ export class DailyFoodModel{
              data: {
                 totalCalories: totalCalories
              }
-            } );
-
-
-        const result = await prisma.dailyMeal.findUnique( {
-            where: {id: dailyMealHeader.id},
-            include: { 
-                dailyMealDetails:{
-                    include: {
-                        dailyMealDetailFood: {
-                            include: {
-                                nutriment : true
-                            }
-                        }
-                    }
-                }
-            }
         } );
 
-        return result;
-    }
-
-    static async resume ( { input } ){
-        const {
-            userId,
-            beginDate,
-            endDate
-        } = input;
-
-        const result = await prisma.dailyMeal.findMany({
-            where: {
-                userId: userId,
-                createdAt: {
-                    gte: new Date(beginDate).toISOString(),
-                    lte: new Date(endDate).toISOString()
-                }
-            }
-        })
-
-        return result;
+        return;
     }
 }
