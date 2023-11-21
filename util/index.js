@@ -26,3 +26,15 @@ export const deleteFromStorage = async (storage, imageURL) => {
         console.error(e);
     }
 }
+
+export const retrieveArraySringify = ( arrayStringify ) =>{
+    let result = arrayStringify;
+    if( result != undefined ){
+        result = JSON.parse( result );
+        result = result.map( i => JSON.parse( i ) );
+    } else{
+        result = [];
+    }
+
+    return result;
+}

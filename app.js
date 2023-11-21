@@ -6,6 +6,7 @@ import categoryRouter from "./routes/category.js";
 import foodRouter from "./routes/food.js";
 import dailyFoodRouter from "./routes/dailyfood.js";
 import weightRouter from "./routes/weight.js";
+import recipeRouter from "./routes/recipe.js";
 
 const app = express();
 const PORT = process.env.PORT ?? 3000;
@@ -21,6 +22,7 @@ app.use('/category', categoryRouter );
 app.use('/food', foodRouter );
 app.use('/daily', dailyFoodRouter );
 app.use('/weight', weightRouter );
+app.use('/recipe', recipeRouter);
 
 app.listen(PORT, () => {
     console.log(`Server listening on port http://localhost:${PORT}`);
