@@ -25,7 +25,26 @@ export class RecipeModel{
     }
 
     static async get( id ){
-       return {};
+        const recipe = await prisma.recipe.findFirst( {
+            include: {
+                ingredients: {
+                    include: {
+                        recipeIngredientfood:{
+                            include: {
+                                nutriment: true,
+                                foodCategory: true,
+                                images: true
+                            }
+                        }
+                    }
+                },
+                steps: true,
+                images: true
+            },
+            where: { id : id}
+        } );
+
+       return recipe ;
     }
 
     static async create({input}){
