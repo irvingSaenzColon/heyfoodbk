@@ -90,7 +90,7 @@ export class DailyFoodModel{
             }
         } );
 
-        await this.updateTotalCalories( userId );
+        await this.updateTotalCalories( dailyMealHeader.id );
 
         return result;
     }
@@ -100,10 +100,14 @@ export class DailyFoodModel{
             id,
             portion,
             type,
+            date,
             userId
         } = input;
       
-    
+        const isoDate = new Date( date ).toISOString();
+
+        const dailyHeader = await prisma.dailyMeal.findFirst( { where: { createdAt: isoDate } } );
+
         const dailyMeal = await prisma.dailyMealDetail.update( {
             data: {
                 portion: portion,
@@ -112,7 +116,7 @@ export class DailyFoodModel{
             where: { id : id }
         } );
 
-        await this.updateTotalCalories( userId );
+        await this.updateTotalCalories( dailyHeader.id );
 
         return dailyMeal;
     }
@@ -156,9 +160,9 @@ export class DailyFoodModel{
         return;
     }
 
-    static async updateTotalCalories( userId ){
+    static async updateTotalCalories( dailyMealId ){
         let totalCalories = 0;
-        const dailyMealHeader = await prisma.dailyMeal.findFirst( { where: {userId: userId} } );
+        const dailyMealHeader = await prisma.dailyMeal.findUnique( { where: {id: dailyMealId} } );
 
         const foodsMeals = await prisma.dailyMealDetail.findMany({
             where: { dailyMealId: dailyMealHeader.id },

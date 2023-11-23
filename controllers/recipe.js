@@ -84,11 +84,26 @@ export class RecipeController{
 
     delete = async (request, response, next) => {
         const id = request.params.id; 
+        const {userId} = request;
 
         if(!id) return response.status(422).json({body: {}, message: 'Falta enviar un parametro para poder realizar la acción'});
 
-        return response.status(204);
+        await this.recipeModel.delete(  {input: { id :parseInt(id), userId }} );
+
+        return response.status(204).json();
     }
 
+    search = async(request, response, next) => {
+        const input = request.body;
+        console.log(input);
+        console.log(input.title === undefined);
+        console.log(input.category === undefined);
+        if(input.title === undefined || input.category === undefined)
+            return response.status(422).json({body: [], message: 'Falta enviar un parametro para poder realizar la acción'});
+
+        const result = await this.recipeModel.search( {input} );
+
+        return response.status(200).json( {body: result, message: ''} );
+    }
 
 }

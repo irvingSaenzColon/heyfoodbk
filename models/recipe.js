@@ -209,5 +209,35 @@ export class RecipeModel{
             id,
             userId
         } = input;
+
+        // Find the recipe first
+        const recipeHeader = await prisma.recipe.findUnique( { where: {id : id} } );
+
+        if(!recipeHeader) return;
+
+        await prisma.recipeIngredient.deleteMany( { where: { recipeId: recipeHeader.id } } );
+        await prisma.recipeStep.deleteMany( { where: { recipeId: recipeHeader.id } } );
+        await prisma.recipeMedia.deleteMany( {where: {recipeId: recipeHeader.id}} );
+        await prisma.recipe.delete( { where: { id: id } } );
+    }
+
+    static async search({input}){
+        const {
+            title,
+            category
+        } = input;
+
+        if(category === undefined || title === undefined) return [];
+
+        const recipes = await prisma.recipe.findMany( {
+            include:{
+                steps: true,
+                images: true,
+                ingredients: true
+            },
+            where: { title: { contains: title} }
+        } )
+
+        return recipes;
     }
 }

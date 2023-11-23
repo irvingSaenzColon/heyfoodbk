@@ -10,6 +10,7 @@ const recipeController = new RecipeController( {recipeModel : RecipeModel} );
 recipeRouter.get('/', userExtractor, recipeController.getAll);
 recipeRouter.get('/:id', userExtractor,recipeController.get);
 recipeRouter.post('/create', userExtractor,recipeController.create);
+recipeRouter.post('/search', userExtractor, recipeController.search);
 recipeRouter.put('/update', userExtractor, recipeController.update);
 recipeRouter.delete('/delete/:id', userExtractor, recipeController.delete);
 

@@ -9,9 +9,7 @@ export class WeightController{
         response.json({});
     }
 
-     getAll = async (request, response, next) => {
-        // const users = await this.userModel.getAll();
-        //TODO: retreive all weights from user
+    getAll = async (request, response, next) => {
         const {userId} = request;
 
         if(!userId){
@@ -76,5 +74,13 @@ export class WeightController{
         await this.weightModel.delete( id );
         
         response.status(204);
+    }
+
+    getFrom = async (request, response, next) => {
+        const id = request.params.id;
+
+        const result = await this.weightModel.getFrom( parseInt( id ) );
+
+        return response.status(200).json( result );
     }
 }

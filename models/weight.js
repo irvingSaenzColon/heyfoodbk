@@ -22,10 +22,21 @@ export class WeightModel{
         const weightItems = await prisma.weightItem.findMany( { 
             where: { weightHeaderId: weightHeader.id }, 
             include:{
-                weightMedia: true
+                weightMedia: true,
+                weightItemWeightHeader :{
+                   include: {
+                    weightHeaderUser: {
+                        select: {
+                            id: true,
+                            nickname: true,
+                            image: true
+                        }
+                    }
+                   }
+                }
             },
             orderBy: { createAt: 'desc' },
-            take: 6
+            take: 7
         } );
 
         weightItems.forEach( wi => {
@@ -146,5 +157,50 @@ export class WeightModel{
 
         await prisma.weightItem.delete( { where: { id: id } } )
         console.log('Hecho');
+    }
+
+    static async getFrom( id ){
+        if(!id) return [];
+
+        const weightHeader = await prisma.weightHeader.findFirst( { where: { userId: id } } );
+
+        if(!weightHeader) return [];
+
+        const weightItems = await prisma.weightItem.findMany( { 
+            where: { weightHeaderId: weightHeader.id },
+            include:{
+                weightMedia: true,
+                weightItemWeightHeader:{
+                    include:{
+                        weightHeaderUser:{
+                            select:{
+                                id:true,
+                                nickname:true,
+                                name:true,
+                                image:true
+                            }
+                        }
+                    }
+                }
+            },
+            orderBy: {id: 'desc'}
+        } );
+
+        weightItems.forEach( wi => {
+            const d = new Date(wi.createAt)
+            const year = d.getFullYear();
+            let month = d.getMonth()+1;
+            let dt = d.getDate();
+
+            if (dt < 10) {
+            dt = '0' + dt;
+            }
+            if (month < 10) {
+            month = '0' + month;
+            }
+            wi.createAt = `${year}-${month}-${dt}`;
+        } )
+
+        return weightItems;
     }
 }
