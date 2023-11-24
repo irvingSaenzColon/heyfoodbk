@@ -5,6 +5,7 @@ export class UserController{
 
     get = async (request, response) => {
         const id = request.params.id;
+
         const user = await this.userModel.get( parseInt( id ) );
         
         response.json(user);
@@ -29,7 +30,6 @@ export class UserController{
         const data = request.body;
         const {userId} = request;
 
-        console.log( cover );
         const result = await this.userModel.update({input: {id: userId, ...data, cover} });
         
         return response.status(202).json(result);

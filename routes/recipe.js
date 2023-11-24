@@ -1,11 +1,13 @@
 import { Router } from "express";
-import { RecipeController } from "../controllers/recipe.js";
-import { RecipeModel } from "../models/recipe.js";
 import { userExtractor } from "../middlewares/userExtractor.js";
+import { RecipeController } from "../controllers/recipe.js";
+import { RecipeCategoryModel } from "../models/recipecategory.js";
+import { RecipeModel } from "../models/recipe.js";
+
 
 const recipeRouter = Router();
 
-const recipeController = new RecipeController( {recipeModel : RecipeModel} );
+const recipeController = new RecipeController( {recipeModel : RecipeModel, categoryModel: RecipeCategoryModel} );
 
 recipeRouter.get('/', userExtractor, recipeController.getAll);
 recipeRouter.get('/:id', userExtractor,recipeController.get);

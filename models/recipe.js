@@ -17,7 +17,12 @@ export class RecipeModel{
             include:{
                 steps: true,
                 ingredients: true,
-                images: true
+                images: true,
+                categories: {
+                    include: {
+                        category: true
+                    }
+                }
             }
         } )
 
@@ -27,13 +32,14 @@ export class RecipeModel{
     static async get( id ){
         const recipe = await prisma.recipe.findFirst( {
             include: {
+                nutriment: true,
                 ingredients: {
                     include: {
                         recipeIngredientfood:{
                             include: {
                                 nutriment: true,
                                 foodCategory: true,
-                                images: true
+                                images: true,
                             }
                         }
                     }
@@ -56,15 +62,37 @@ export class RecipeModel{
            images,
            steps,
            ingredients,
+           categories,
            userId
         } = input;
+        const newNutriments = await this.updateNutriments( ingredients );
+
+        const nutriments = await prisma.nutriments.create( {
+            data: {
+                portion: newNutriments.portion,
+                energy: newNutriments.energy,
+                calories: newNutriments.calories ,
+                carbohydrates: newNutriments.carbohydrates ,
+                proteins: newNutriments.proteins ,
+                fiber: newNutriments.fiber ,
+                potassium: newNutriments.potassium ,
+                sugar: newNutriments.sugar ,
+                fat: newNutriments.fat ,
+                saturatedFats: newNutriments.saturatedFats ,
+                polyunsaturatedFat: newNutriments.polyunsaturatedFat ,
+                cholesterol: newNutriments.cholesterol ,
+                sodium: newNutriments.sodium
+            }
+        } );
+
         const recipeHeader = await prisma.recipe.create( {
             data: {
                 title: title,
                 description: description,
                 preparationTime: preparationTime,
                 cookingTime: cookingTime,
-                userId: userId
+                userId: userId,
+                nutrimentId: nutriments.id
             }
         } );
 
@@ -85,6 +113,15 @@ export class RecipeModel{
                     recipeId: recipeHeader.id
                 }
             } )
+        } );
+
+        categories.forEach( async(category) =>{
+            await prisma.categoriesOnRecipe.create({
+                data: {
+                    recipeId: recipeHeader.id,
+                    categoryId: category.id
+                }
+            });
         } );
 
         if(images === null) return recipeHeader;
@@ -112,12 +149,14 @@ export class RecipeModel{
             images,
             steps,
             ingredients,
-            userId,
+            categories,
             deletedIngredients,
             deletedImages,
             deletedSteps,
             updatedSteps,
-            updatedIngredients
+            updatedIngredients,
+            deletedCategories,
+            userId
          } = input;
 
          const recipeHeader = await prisma.recipe.update( {
@@ -186,20 +225,61 @@ export class RecipeModel{
         } );
 
         // Updateing ingredients
-        updatedIngredients.forEach( async(ingredient) => {
+        for await (const ingredient of updatedIngredients){
             await prisma.recipeIngredient.update( {
                 data:{
                     portion: ingredient.portion
                 },
                 where: { id: ingredient.id }
             } );
-        } )
+        }
 
         // Removing ingredients
         deletedIngredients.forEach( async( id ) =>{
             const exists = await prisma.recipeIngredient.findFirst( {where:{ id: id } } );
             if(exists) await prisma.recipeIngredient.delete( { where:{id:id} } );
         } );
+
+        // Removing Categories
+        deletedCategories.forEach( async(id) => {
+            await prisma.categoriesOnRecipe.delete({
+                where:{ recipeId_categoryId: {
+                    recipeId: recipeHeader.id,
+                    categoryId: parseInt( id )
+                } }
+            })
+        } );
+
+        categories.forEach( async ( category ) => {
+            await prisma.categoriesOnRecipe.create( {
+                data: {
+                    recipeId: recipeHeader.id,
+                    categoryId: parseInt( category.id )
+                }
+            } )
+        } );
+
+        const newIngredients = await prisma.recipeIngredient.findMany({ where: { recipeId: recipeHeader.id }});
+
+        const newNutriments = await this.updateNutriments( newIngredients );
+        await prisma.nutriments.update( {
+            data: {
+                portion: newNutriments.portion,
+                energy: newNutriments.energy,
+                calories: newNutriments.calories ,
+                carbohydrates: newNutriments.carbohydrates ,
+                proteins: newNutriments.proteins ,
+                fiber: newNutriments.fiber ,
+                potassium: newNutriments.potassium ,
+                sugar: newNutriments.sugar ,
+                fat: newNutriments.fat ,
+                saturatedFats: newNutriments.saturatedFats ,
+                polyunsaturatedFat: newNutriments.polyunsaturatedFat ,
+                cholesterol: newNutriments.cholesterol ,
+                sodium: newNutriments.sodium
+            },
+            where: { id: recipeHeader.nutrimentId }
+        } )
 
        return recipeHeader;
     }
@@ -214,7 +294,7 @@ export class RecipeModel{
         const recipeHeader = await prisma.recipe.findUnique( { where: {id : id} } );
 
         if(!recipeHeader) return;
-
+        
         await prisma.recipeIngredient.deleteMany( { where: { recipeId: recipeHeader.id } } );
         await prisma.recipeStep.deleteMany( { where: { recipeId: recipeHeader.id } } );
         await prisma.recipeMedia.deleteMany( {where: {recipeId: recipeHeader.id}} );
@@ -227,17 +307,88 @@ export class RecipeModel{
             category
         } = input;
 
+        
         if(category === undefined || title === undefined) return [];
 
-        const recipes = await prisma.recipe.findMany( {
-            include:{
-                steps: true,
-                images: true,
-                ingredients: true
-            },
+        const recipesGB = await prisma.recipe.groupBy( {
+            by:['id'],
             where: { title: { contains: title} }
-        } )
+        } );
+
+        const recipes = [];
+        for await (const rt of recipesGB){
+            const temp = await prisma.recipe.findUnique({
+                include: {
+                    images: true,
+                    steps: true,
+                    ingredients: true,
+                    categories: {
+                        include: {
+                            category: true
+                        }
+                    }
+                },
+                where: { id : rt.id }
+            });
+
+            recipes.push( temp );
+        }
+
+        console.log( recipes );
+
+        recipes.forEach( recipe =>{
+            recipe.categories = recipe.categories.map( category => {
+                return{ id: category.category.id ,recipeId: category.recipeId, name: category.category.name };
+            } );
+        } );
 
         return recipes;
+    }
+
+    static async updateNutriments(ingredients){
+        let output = {
+            portion: 0,
+            energy: 0,
+            calories: 0,
+            carbohydrates: 0,
+            proteins: 0,
+            fiber: 0,
+            potassium: 0,
+            sugar: 0,
+            fat: 0,
+            saturatedFats: 0,
+            polyunsaturatedFat: 0,
+            cholesterol: 0,
+            sodium: 0
+        };
+
+        for await(const ingredient of ingredients){
+            const food = await prisma.food.findUnique({
+                include: {
+                    nutriment: true
+                },
+                where: { id: ingredient.foodId }
+            });
+
+            const { nutriment } = food;
+            const portionFloat = parseFloat( ingredient.portion );
+            const nutrimentFloat = parseFloat( nutriment.portion );
+
+            output.portion += parseFloat(ingredient.portion)  ;
+            output.energy += (parseFloat(nutriment.energy) * portionFloat) / nutrimentFloat;
+            output.calories+= (parseFloat(nutriment.calories) * portionFloat) / nutrimentFloat;
+            output.carbohydrates += (parseFloat(nutriment.carbohydrates) * portionFloat) / nutrimentFloat;
+            output.proteins += (parseFloat(nutriment.proteins) * portionFloat) / nutrimentFloat;
+            output.fiber += (parseFloat(nutriment.fiber) * portionFloat) / nutrimentFloat;
+            output.potassium += (parseFloat(nutriment.potassium) * portionFloat) / nutrimentFloat;
+            output.sugar += (parseFloat(nutriment.sugar) * portionFloat) / nutrimentFloat;
+            output.fat += (parseFloat(nutriment.fat) * portionFloat) / nutrimentFloat;
+            output.saturatedFats += (parseFloat(nutriment.saturatedFats) * portionFloat) / nutrimentFloat;
+            output.polyunsaturatedFat += (parseFloat(nutriment.polyunsaturatedFat) * portionFloat) / nutrimentFloat;
+            output.cholesterol += (parseFloat(nutriment.cholesterol) * portionFloat) / nutrimentFloat;
+            output.sodium += (parseFloat(nutriment.sodium) * portionFloat) / nutrimentFloat;
+        }
+
+        return output;
     }
 }

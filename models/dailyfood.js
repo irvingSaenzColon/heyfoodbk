@@ -20,9 +20,10 @@ export class DailyFoodModel{
                 dailyMealDetails: {
                     include: {
                         dailyMealDetailFood: {
-                            include: {
-                                nutriment: true
-                            }
+                            include: { nutriment: true }
+                        },
+                        dailyMealDetailRecipe: {
+                            include: { nutriment: true }
                         }
                     }
                 }
@@ -65,14 +66,26 @@ export class DailyFoodModel{
 
         // Create detail of daily meal for each food
         for await (const food of foods) {
-            await prisma.dailyMealDetail.create({
-                data: {
-                    portion: food.portion,
-                    type: type,
-                    foodId: food.id,
-                    dailyMealId: dailyMealHeader.id
-                }
-            });
+            const {foodId, recipeId} = food;
+            if(foodId !== undefined){
+                await prisma.dailyMealDetail.create({
+                    data: {
+                        portion: food.portion,
+                        type: type,
+                        foodId: foodId,
+                        dailyMealId: dailyMealHeader.id
+                    }
+                });
+            } else{
+                await prisma.dailyMealDetail.create({
+                    data: {
+                        portion: food.portion,
+                        type: type,
+                        recipeId: recipeId,
+                        dailyMealId: dailyMealHeader.id
+                    }
+                });
+            }
         }
 
         const result = await prisma.dailyMeal.findUnique( {
@@ -148,14 +161,12 @@ export class DailyFoodModel{
         } = input;
         console.log( id, userId );
         const dailyMealDetail = await prisma.dailyMealDetail.findUnique( { where: {id: id} } );
-        
         if(dailyMealDetail !== null){
             await prisma.dailyMealDetail.delete( { where: { id: id} } );
-        } else{
-            console.log( 'No se encontró el registro' );
-        }
 
-        await this.updateTotalCalories( userId );
+            const dailyMealId =dailyMealDetail.dailyMealId;
+            await this.updateTotalCalories( dailyMealId );
+        }
 
         return;
     }
@@ -176,11 +187,25 @@ export class DailyFoodModel{
                             }
                         }
                     }
+                },
+                dailyMealDetailRecipe: {
+                    select: {
+                        nutriment: {
+                            select: {
+                                calories: true
+                            }
+                        }
+                    }
                 }
             }
         });
 
-        for (const f of foodsMeals) totalCalories +=((f.dailyMealDetailFood.nutriment.calories * f.portion) / 100);
+        for (const f of foodsMeals){
+            if(f.dailyMealDetailFood !== undefined && f.dailyMealDetailFood !== null)
+                totalCalories +=((f.dailyMealDetailFood.nutriment.calories * f.portion) / 100);
+            else
+                totalCalories +=((f.dailyMealDetailRecipe.nutriment.calories * f.portion) / 100);
+        }
 
         await prisma.dailyMeal.update( {
              where: { id: dailyMealHeader.id } ,

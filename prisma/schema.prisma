@@ -50,7 +50,7 @@ model Nutriments{
   cholesterol Decimal @db.Decimal(6,2)
   sodium Decimal @db.Decimal(6,2)
   food Food?
-
+  recipe Recipe?
   
   @@map("Nutriments")
 }
@@ -95,9 +95,13 @@ model Recipe{
   cookingTime String @db.VarChar(6)
   recipeUser User @relation(fields: [userId], references: [id])
   userId Int
+  nutriment Nutriments @relation(fields: [nutrimentId], references: [id], onDelete: Cascade)
+  nutrimentId Int @unique
   images RecipeMedia[]
   steps RecipeStep[]
   ingredients RecipeIngredient[]
+  categories CategoriesOnRecipe[]
+  dailyMealDetails DailyMealDetail[]
 
   @@map("Recipe")
 }
@@ -131,6 +135,24 @@ model RecipeIngredient{
   @@map("RecipeIngredient")
 }
 
+model RecipeCategory{
+  id Int @id @default(autoincrement())
+  name String @db.VarChar(100)
+  recipes CategoriesOnRecipe[]
+
+  @@map("RecipeCategory")
+}
+
+model CategoriesOnRecipe{
+  recipe Recipe @relation(fields: [recipeId], references: [id])
+  recipeId Int
+  category RecipeCategory @relation( fields: [categoryId], references: [id] )
+  categoryId Int
+  
+  @@id([recipeId, categoryId])
+  @@map("CategoriesOnRecipe")
+}
+
 model DailyMeal{
   id Int @id @default( autoincrement() )
   totalCalories Decimal @db.Decimal(6,2)
@@ -146,8 +168,10 @@ model DailyMealDetail{
   type String
   dailyMealDailyMealDetail DailyMeal @relation(fields: [dailyMealId], references: [id])
   dailyMealId Int
-  dailyMealDetailFood Food @relation(fields: [foodId], references: [id])
-  foodId Int
+  dailyMealDetailFood Food? @relation(fields: [foodId], references: [id])
+  foodId Int?
+  dailyMealDetailRecipe Recipe? @relation(fields: [recipeId], references: [id])
+  recipeId Int?
 
 }
 
@@ -224,4 +248,3 @@ model WeightMedia{
 
   @@map("WeightMedia")
 }
-

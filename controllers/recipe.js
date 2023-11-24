@@ -1,3 +1,4 @@
+import { response } from "express";
 import { retrieveArraySringify } from "../util/index.js";
 
 export class RecipeController{
@@ -24,23 +25,25 @@ export class RecipeController{
 
         return response.status(200).json({body: result, message: ''});
     }
+    
 
     create = async (request, response, next) => {
         let images = request.files !== null && request.files !== undefined ? request.files.images : [];
         let input = request.body;
         const { userId } = request;
-        const  ingredients  =   retrieveArraySringify( input.ingredients ) ;
-        const steps = retrieveArraySringify( input.steps );
-        const categories  = retrieveArraySringify(input.categories);
-
+        console.log( input );
+        console.log( images );
+        const  ingredients  =  retrieveArraySringify( input.ingredients ) ;
+        const steps = JSON.parse( input.steps );
+        const categories  = JSON.parse(input.categories);
         if(!Array.isArray( images )){
             images = [ images ];
         }
 
         input = {...input, ingredients, steps, categories, images, userId};
-
+        
         console.log( input );
-
+        
         const result = await this.recipeModel.create({input});
 
         return response.status(200).json( {body: result, message: 'Se ha creado la receta'} );
@@ -57,6 +60,8 @@ export class RecipeController{
         const deletedImages = JSON.parse( input.deletedImages );
         const deletedSteps = JSON.parse( input.deletedSteps );
         const updatedIngredients = retrieveArraySringify( input.updatedIngredients );
+        const deletedCategories = JSON.parse( input.deletedCategories );
+        
         const id = parseInt( input.id );
         if(!Array.isArray( images )){
             images = [ images ];
@@ -72,15 +77,18 @@ export class RecipeController{
             deletedImages, 
             deletedIngredients, 
             deletedSteps,
+            deletedCategories,
             updatedSteps,
             updatedIngredients
         };
-        console.log( input );
-        const result = {}
-        await this.recipeModel.update( {input: input} );
+        
+        
+        const result = await this.recipeModel.update( {input: input} );
         
         return response.status(201).json( {body: result, message: 'Se ha actualizado la receta'} );
     }
+
+    
 
     delete = async (request, response, next) => {
         const id = request.params.id; 
@@ -95,9 +103,7 @@ export class RecipeController{
 
     search = async(request, response, next) => {
         const input = request.body;
-        console.log(input);
-        console.log(input.title === undefined);
-        console.log(input.category === undefined);
+
         if(input.title === undefined || input.category === undefined)
             return response.status(422).json({body: [], message: 'Falta enviar un parametro para poder realizar la acción'});
 

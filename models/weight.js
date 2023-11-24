@@ -83,7 +83,7 @@ export class WeightModel{
          } );
 
          //TODO : insert images if array is not empty or null
-         await images.forEach(async (img) => {
+         for await(const img of images){
             const imageUrl =   await storageImage(storage,'Weight', img);
             let weightMedia = await prisma.weightMedia.create({ 
                 data: {
@@ -93,7 +93,7 @@ export class WeightModel{
             });
 
             weightImages.push( weightMedia );
-         });
+         }
 
          weightItem.weightMedia = weightImages;
 

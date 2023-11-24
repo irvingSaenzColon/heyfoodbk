@@ -31,6 +31,7 @@ export const retrieveArraySringify = ( arrayStringify ) =>{
     let result = arrayStringify;
     if( result != undefined ){
         result = JSON.parse( result );
+        console.log( result );
         result = result.map( i => JSON.parse( i ) );
     } else{
         result = [];
