@@ -83,4 +83,13 @@ export class WeightController{
 
         return response.status(200).json( result );
     }
+
+    search = async(request, response, next) => {
+        const input = request.body;
+        const {userid} = request;
+
+        const result = await this.weightModel.search( {input} );
+
+        response.status(200).json({body: result, message: ''});
+    }
 }

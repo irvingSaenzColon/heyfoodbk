@@ -167,16 +167,33 @@ export class UserModel{
             // userResult = await this.findByTelephone({input: {telephone: credential, option: 'ft'}});
         }
 
-        const size = Object.entries(userResult).length;
+        
 
-        if(userResult.password !== password || !size) return {body: 'Usuario y/o contraseña incorrectos', error:1004, status: 401};
-
+        if(!userResult) return null;
+        
+        if(userResult.password !== password ) return null;
+        console.log(userResult);
         const payload = {id : userResult.id, nickname: userResult.nickname };
 
         const token = sign(payload, process.env.SECRET, {
             expiresIn: '7d'
         });
 
-        return {body: {id : userResult.id, token: token}, error:0, status: 202};
+        return {id : userResult.id, token: token};
+    }
+
+    static async search({input}){
+        const {
+            username
+        } = input;
+
+        const users = await prisma.user.findMany( {
+            where: { OR: [
+                {nickname: { contains: username }},
+                {name: { contains: username }}
+            ] }
+        } );
+
+        return users;
     }
 }

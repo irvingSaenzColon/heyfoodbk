@@ -22,6 +22,8 @@ export class DailyFoodController{
         const input = request.body;
         const userId = request.userId; 
 
+        console.log(userId);
+        
         if( !userId || !input.foods ) return response.status(422).json({body: null, message: 'Falta enviar campos'});
 
         const result = await this.dailyFoodModel.create( { input: {...input, userId} } );

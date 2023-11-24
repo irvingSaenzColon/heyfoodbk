@@ -10,6 +10,7 @@ const weightController = new WeightController( {weightModel : WeightModel} );
 weightRouter.get('/', userExtractor, weightController.getAll);
 weightRouter.get('/:id', weightController.get);
 weightRouter.get('/from/:id', weightController.getFrom);
+weightRouter.post('/search', weightController.search);
 weightRouter.post('/create', userExtractor,weightController.create);
 weightRouter.post('/update', userExtractor, weightController.update);
 weightRouter.delete('/delete/:id', userExtractor, weightController.delete);

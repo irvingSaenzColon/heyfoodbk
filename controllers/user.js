@@ -38,9 +38,20 @@ export class UserController{
     authenticate = async (request, response, next) => {
         const input = request.body;
         
-        const result = await this.userModel.authenticate( {input: input} );
+        try{
+            const result = await this.userModel.authenticate( {input: input} );
+            response.status(200).json({body: result, message: !result? 'usuario y/o contraseña incorrectos' : ''});
+        } catch(e){
+
+        }
+    }
+
+    search = async (request, response, next) => {
+        const input = request.body;
         
-        response.status(result.status).json(result);
+        const result = await this.userModel.search( {input} );
+
+        response.status(200).json( { body: result, message: '' } );
     }
 
 }

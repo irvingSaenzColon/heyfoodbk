@@ -203,4 +203,33 @@ export class WeightModel{
 
         return weightItems;
     }
+
+    static async search( {input} ){
+        const {
+            description
+        } = input;
+
+        const weightItems = await prisma.weightItem.findMany( { 
+            where: { description: { contains: description } },
+            include:{
+                weightMedia: true,
+                weightItemWeightHeader:{
+                    include:{
+                        weightHeaderUser:{
+                            select:{
+                                id:true,
+                                nickname:true,
+                                name:true,
+                                image:true
+                            }
+                        }
+                    }
+                }
+            },
+            orderBy: {id: 'desc'}
+        } );
+
+
+        return weightItems;
+    }
 }
